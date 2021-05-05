@@ -1,0 +1,8 @@
+{
+  "user": "koltok.ng",
+  "proj_name": "signal",
+  "experiment_name": "signal_1",
+  "API_token": "eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vdWkubmVwdHVuZS5haSIsImFwaV91cmwiOiJodHRwczovL3VpLm5lcHR1bmUuYWkiLCJhcGlfa2V5IjoiYzdmNjI5ZDYtOWFlNy00MjVjLWFmMjEtZDIyYWJiYWM5OWUzIn0=",
+  "tags": ["lab_pc"],
+  "source": ["src/main/main_train.py"]
+}

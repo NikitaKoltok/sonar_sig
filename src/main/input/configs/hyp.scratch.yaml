@@ -1,0 +1,16 @@
+# Hyperparameters for COCO training from scratch
+# python train.py --batch 40 --cfg yolov5m.yaml --weights '' --data coco.yaml --img 640 --epochs 300
+# See tutorials for hyperparameter evolution https://github.com/ultralytics/yolov5#tutorials
+
+
+lr0: 0.001  # initial learning rate (SGD=1E-2, Adam=1E-3)
+lrf: 0.01  # final OneCycleLR learning rate (lr0 * lrf)
+momentum: 0.995  # SGD momentum/Adam beta1
+weight_decay: 0.01  # optimizer weight decay 5e-4
+warmup_epochs: 0.0  # warmup epochs (fractions ok)
+warmup_momentum: 0.95  # warmup initial momentum
+warmup_bias_lr: 0.001  # warmup initial bias lr
+smooth: 0.1
+alpha: 0.6  # focal loss alpha
+gamma: 1.5  # focal loss gamma (efficientDet default gamma=1.5)
+seed: 522

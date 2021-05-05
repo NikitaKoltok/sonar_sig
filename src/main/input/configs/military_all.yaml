@@ -1,0 +1,9 @@
+# train and val data as 1) directory: path/
+train: ../../../../signal_labels_new/patches_2  # images
+val: ../../../../signal_labels_new/patches_2 # images
+
+# number of classes
+nc: 1
+
+# class names
+names: ['object']
