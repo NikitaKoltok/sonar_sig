@@ -59,12 +59,18 @@ class DatasetCreator(Dataset):
                 #print(self.counter)
                 #self.data_type = 'back'
 
-        elif self.counter > 0 and self.counter <= self.data_series:
+        elif self.counter > 0 and self.counter < self.data_series:
             print('B')
-            item += 1
+            item = self.prev_num + 1
             self.counter += 1
             self.prev_num = item
             #print(self.counter)
+
+        else:
+            print('C')
+            item = self.prev_num + 1
+            self.counter = 0
+            self.prev_num = item
 
         label = float(labels[item])
 
@@ -98,8 +104,8 @@ class DatasetCreator(Dataset):
 if __name__ == '__main__':
     db = DatasetCreator(pics_root_dir="../../signal_labels_new/patches_5000_grand/learning/",
                         labels_root_dir="../../signal_labels_new/patches_5000_grand/learning/",
-                        obj_percentage=100,
-                        amp_data=True, complex_data=False, data_series=3)  # load database
+                        obj_percentage=30,
+                        amp_data=True, complex_data=False, data_series=1)  # load database
 
     learning_labels = np.fromfile("../../signal_labels_new/patches_5000_grand/learning/labels.bin", dtype=np.float)
     train_idx = np.arange(len(learning_labels))
