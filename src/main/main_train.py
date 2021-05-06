@@ -23,8 +23,8 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data.sampler import SubsetRandomSampler
 from tqdm import tqdm
 
-from src.data_process.load_data import DatasetCreator
-from src.models.dist_lstm import ModelLSTM
+from src.data_process.load_data_2d import DatasetCreator
+from src.models.dist_lstm_2d import ModelLSTM
 from src.utils.general import (seed_everything, set_logging, check_git_status, increment_dir, check_file,
                                get_latest_run, plot_lr_scheduler)
 #from src.utils.metrics import f1_score
@@ -77,7 +77,7 @@ class TrainProcess(object):
         # ]
 
         # параметры модели
-        self.encoder_size = [32, 64, 128, 256, 512, 1024]
+        self.encoder_size = [16, 32, 64, 128, 256, 512]
         self.encoder_dropout = 0.3
         self.lstm_layers = 2
         self.lstm_hidden_size = 64
@@ -182,9 +182,9 @@ class TrainProcess(object):
             with torch.set_grad_enabled(True):
                 # Forward
                 with amp.autocast(enabled=True):
-                    pred, prev_data_1 = self.model(RCS, prev_data)  # forward
-                    prev_data = prev_data_1.detach()
-                    #pred = self.model(RCS)
+                    #pred, prev_data_1 = self.model(RCS, prev_data)  # forward
+                    #prev_data = prev_data_1.detach()
+                    pred = self.model(RCS)
                     loss = self.criterion(pred, labels)  # loss scaled by batch_size
                     #loss = self.criterion(pred, labels)
 
@@ -198,7 +198,7 @@ class TrainProcess(object):
                 total_grad_norm = total_grad_norm ** (1./2)
                     #p.register_hook(lambda grad: torch.clamp(grad, -500, 500))
 
-                torch.nn.utils.clip_grad_value_(self.model.parameters(), 1000)
+                torch.nn.utils.clip_grad_value_(self.model.parameters(), 10000)
 
                 # old accumulate
                 # if (i + 1) % self.accumulate or self.accumulate == 1:
@@ -264,9 +264,9 @@ class TrainProcess(object):
         for i, (RCS, labels) in pbar:
             RCS, labels = RCS.to(device), labels.to(device).unsqueeze(0).transpose(0, 1)
             with torch.set_grad_enabled(False):
-                outputs, prev_data_val = self.model(RCS, prev_data)
-                prev_data = prev_data_val.detach()
-                #outputs = self.model(RCS)
+                #outputs, prev_data_val = self.model(RCS, prev_data)
+                #prev_data = prev_data_val.detach()
+                outputs = self.model(RCS)
                 loss = self.criterion(outputs, labels)
 
                 for p in self.model.parameters():
@@ -307,11 +307,11 @@ class TrainProcess(object):
         """
         learning_data_set = DatasetCreator(pics_root_dir="../../signal_labels_new/patches_5000_grand/learning/",
                                            labels_root_dir="../../signal_labels_new/patches_5000_grand/learning/",
-                                           obj_percentage=10, amp_data=True, complex_data=False)
+                                           obj_percentage=20, amp_data=True, complex_data=False, patch_size=5)
 
         validation_data_set = DatasetCreator(pics_root_dir="../../signal_labels_new/patches_5000_grand/validation/",
                                              labels_root_dir="../../signal_labels_new/patches_5000_grand/validation/",
-                                             obj_percentage=50, amp_data=True, complex_data=False)
+                                             obj_percentage=50, amp_data=True, complex_data=False, patch_size=5)
 
         # create class balance validation
         learning_labels = np.fromfile("../../signal_labels_new/patches_5000_grand/learning/labels.bin", dtype=np.float)
@@ -583,7 +583,7 @@ if __name__ == '__main__':
     parser.add_argument('--neptune_params', type=str, default='input/configs/neptune_settings.json',
                         help='neptune params file path')
 
-    opt = parser.parse_args('--name net_32_64_128_256_512_1024_convs_diff_ep_100_amp --single-cls'.split())
+    opt = parser.parse_args('--name net_16_32_64_128_256_512_convs_diff_ep_100_amp_2d --single-cls'.split())
 
     # Set DDP variables
     opt.total_batch_size = opt.batch_size

@@ -45,7 +45,6 @@ class DatasetCreator(Dataset):
         eps = random.random()
 
         if self.counter == 0:
-            print('A')
             if eps < self.obj_percentage:
                 item = int(random.choice(np.arange(list(labels).index(0) - 1 - self.data_series)))
                 self.prev_num = item
@@ -60,14 +59,12 @@ class DatasetCreator(Dataset):
                 #self.data_type = 'back'
 
         elif self.counter > 0 and self.counter < self.data_series:
-            print('B')
             item = self.prev_num + 1
             self.counter += 1
             self.prev_num = item
             #print(self.counter)
 
         else:
-            print('C')
             item = self.prev_num + 1
             self.counter = 0
             self.prev_num = item
