@@ -77,7 +77,7 @@ class TrainProcess(object):
         # ]
 
         # параметры модели
-        self.encoder_size = [32, 64, 128, 256, 512, 1024]
+        self.encoder_size = [16, 32, 64, 128, 256, 512]
         self.encoder_dropout = 0.3
         self.lstm_layers = 2
         self.lstm_hidden_size = 64
