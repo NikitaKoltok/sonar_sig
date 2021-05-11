@@ -1,0 +1,11 @@
+lr0: 0.01
+lrf: 0.01
+momentum: 0.995
+weight_decay: 0.01
+warmup_epochs: 0.0
+warmup_momentum: 0.95
+warmup_bias_lr: 0.001
+smooth: 0.1
+alpha: 0.6
+gamma: 1.5
+seed: 522

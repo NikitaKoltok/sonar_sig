@@ -6,7 +6,7 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset, DataLoader
 import torch.nn as nn
-from src.models.dist_lstm_2d import ModelLSTM
+from src.models.lstm_conv2d import ModelLSTM_conv2d
 from torch.utils.data.sampler import SubsetRandomSampler
 from tqdm import tqdm
 from sklearn.metrics import accuracy_score
@@ -100,7 +100,7 @@ if __name__ == '__main__':
     #loader = DataLoader(db, batch_size=64, num_workers=4, shuffle=True)
     # for i in tqdm(loader, total=len(loader)):
     #     pass
-    model = ModelLSTM(input_size=1, output_size=1, blocks_size=[16, 32, 64, 128, 256, 512])
+    model = ModelLSTM_conv2d(input_size=1, output_size=1, blocks_size=[16, 32, 64, 128, 256, 512])
     x, target = next(iter(loader))
 
     conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=5, bias=False, padding=0)

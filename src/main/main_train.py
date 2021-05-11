@@ -23,8 +23,8 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data.sampler import SubsetRandomSampler
 from tqdm import tqdm
 
-from src.data_process.load_data_2d import DatasetCreator
-from src.models.dist_lstm_2d import ModelLSTM
+from src.data_process.load_data_ser import DatasetCreator
+from src.models.dist_lstm import ModelLSTM
 from src.utils.general import (seed_everything, set_logging, check_git_status, increment_dir, check_file,
                                get_latest_run, plot_lr_scheduler)
 #from src.utils.metrics import f1_score
@@ -109,13 +109,16 @@ class TrainProcess(object):
             plt.ylabel('Верный класс', size=19, labelpad=.2)
             plt.xlabel('Предсказанный класс', size=19, labelpad=.2)
 
+        prev_data = torch.rand((self.batch_size, self.lstm_hidden_size * 2)).to(device='cuda')
         all_predicted, all_labels = [], []
         self.model.eval()
         pbar = tqdm(self.val_loader, total=len(self.val_loader), ascii=True, desc='plot validation')
         for RCS, labels in pbar:
             RCS, labels = RCS.to(device), labels.to(device)
             with torch.set_grad_enabled(False):
-                outputs = self.model(RCS)
+                outputs, prev_data_1 = self.model(RCS, prev_data)  # forward
+                prev_data = prev_data_1.detach()
+                #outputs = self.model(RCS)
 
             _, pred = outputs.sigmoid().max(1)
             # _, label = labels.max(1)
@@ -182,9 +185,9 @@ class TrainProcess(object):
             with torch.set_grad_enabled(True):
                 # Forward
                 with amp.autocast(enabled=True):
-                    #pred, prev_data_1 = self.model(RCS, prev_data)  # forward
-                    #prev_data = prev_data_1.detach()
-                    pred = self.model(RCS)
+                    pred, prev_data_1 = self.model(RCS, prev_data)  # forward
+                    prev_data = prev_data_1.detach()
+                    #pred = self.model(RCS)
                     loss = self.criterion(pred, labels)  # loss scaled by batch_size
                     #loss = self.criterion(pred, labels)
 
@@ -198,7 +201,7 @@ class TrainProcess(object):
                 total_grad_norm = total_grad_norm ** (1./2)
                     #p.register_hook(lambda grad: torch.clamp(grad, -500, 500))
 
-                torch.nn.utils.clip_grad_value_(self.model.parameters(), 10000)
+                torch.nn.utils.clip_grad_value_(self.model.parameters(), 6000)
 
                 # old accumulate
                 # if (i + 1) % self.accumulate or self.accumulate == 1:
@@ -264,9 +267,9 @@ class TrainProcess(object):
         for i, (RCS, labels) in pbar:
             RCS, labels = RCS.to(device), labels.to(device).unsqueeze(0).transpose(0, 1)
             with torch.set_grad_enabled(False):
-                #outputs, prev_data_val = self.model(RCS, prev_data)
-                #prev_data = prev_data_val.detach()
-                outputs = self.model(RCS)
+                outputs, prev_data_val = self.model(RCS, prev_data)
+                prev_data = prev_data_val.detach()
+                #outputs = self.model(RCS)
                 loss = self.criterion(outputs, labels)
 
                 for p in self.model.parameters():
@@ -305,17 +308,17 @@ class TrainProcess(object):
         """
         Загружает данные в обучающую и валидационную выборки
         """
-        learning_data_set = DatasetCreator(pics_root_dir="../../signal_labels_new/patches_5000_grand/learning/",
-                                           labels_root_dir="../../signal_labels_new/patches_5000_grand/learning/",
-                                           obj_percentage=20, amp_data=True, complex_data=False, patch_size=5)
+        learning_data_set = DatasetCreator(pics_root_dir="/media/koltokng/Новый том/hyscan/big_size_dataset/sonar_dataset/dataset_obj/learning/",
+                                           labels_root_dir="/media/koltokng/Новый том/hyscan/big_size_dataset/sonar_dataset/dataset_obj/learning/",
+                                           obj_percentage=33, amp_data=True, complex_data=False, data_series=1) #на деле серия будет из data_series + 1 строк
 
-        validation_data_set = DatasetCreator(pics_root_dir="../../signal_labels_new/patches_5000_grand/validation/",
-                                             labels_root_dir="../../signal_labels_new/patches_5000_grand/validation/",
-                                             obj_percentage=50, amp_data=True, complex_data=False, patch_size=5)
+        validation_data_set = DatasetCreator(pics_root_dir="/media/koltokng/Новый том/hyscan/big_size_dataset/sonar_dataset/dataset_obj/validation/",
+                                             labels_root_dir="/media/koltokng/Новый том/hyscan/big_size_dataset/sonar_dataset/dataset_obj/validation/",
+                                             obj_percentage=50, amp_data=True, complex_data=False, data_series=1)
 
         # create class balance validation
-        learning_labels = np.fromfile("../../signal_labels_new/patches_5000_grand/learning/labels.bin", dtype=np.float)
-        valid_labels = np.fromfile("../../signal_labels_new/patches_5000_grand/validation/labels.bin", dtype=np.float)
+        learning_labels = np.fromfile("/media/koltokng/Новый том/hyscan/big_size_dataset/sonar_dataset/dataset_obj/learning/labels.bin", dtype=np.float)
+        valid_labels = np.fromfile("/media/koltokng/Новый том/hyscan/big_size_dataset/sonar_dataset/dataset_obj/validation/labels.bin", dtype=np.float)
         train_idx = np.arange(len(learning_labels))
         valid_idx = np.arange(len(valid_labels))
 
@@ -440,7 +443,7 @@ class TrainProcess(object):
         #                              gamma=hyp["gamma"],
         #                              smooth=hyp["smooth"]).to(device)
 
-        self.criterion = nn.BCEWithLogitsLoss(pos_weight=torch.tensor(4))
+        self.criterion = nn.BCEWithLogitsLoss(pos_weight=torch.tensor(3))
         #self.criterion = nn.CrossEntropyLoss()
 
         # Scheduler https://arxiv.org/pdf/1812.01187.pdf
@@ -583,7 +586,7 @@ if __name__ == '__main__':
     parser.add_argument('--neptune_params', type=str, default='input/configs/neptune_settings.json',
                         help='neptune params file path')
 
-    opt = parser.parse_args('--name net_16_32_64_128_256_512_convs_diff_ep_100_amp_2d --single-cls'.split())
+    opt = parser.parse_args('--name net_16_32_64_128_256_512_2_series_30_per_obj --single-cls'.split())
 
     # Set DDP variables
     opt.total_batch_size = opt.batch_size

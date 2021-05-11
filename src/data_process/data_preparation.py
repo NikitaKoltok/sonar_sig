@@ -60,9 +60,9 @@ def object_data_sampler(data_folder,
             for i in range(len(labels)):
                 if int(labels[i].split(" ")[0]) in classes:
                     x = int(float(labels[i].split(" ")[1]) * 512 * x_scale_factor)
-                    y = int(float(labels[i].split(" ")[2]) * 512)
+                    y = int(float(labels[i].split(" ")[2]) * full_img.shape[0])
                     width = int(float(labels[i].split(" ")[3]) * 512 * x_scale_factor)
-                    height = int(float(labels[i].split(" ")[4]) * 512)
+                    height = int(float(labels[i].split(" ")[4]) * full_img.shape[0])
                     for m in range(int(y - int((height * obj_size)/2)), int(y + int((height * obj_size)/2))):
                         if save_amp:
                             if len(amp_data[m]) > patch_length:
@@ -251,6 +251,7 @@ def background_data_sampler(data_folder,
         target_folder = os.path.join(res_folder, "patches", "im")
 
     for name in names:
+        print(len(os.listdir(target_folder)))
         if len(os.listdir(target_folder)) < total_num:
             if name.endswith('.txt'):
                 labels = open(os.path.join(data_folder, name), 'r').readlines()
@@ -271,18 +272,18 @@ def background_data_sampler(data_folder,
                     for i in range(len(labels)):
                         if int(labels[i].split(" ")[0]) in classes:
                             x = int(float(labels[i].split(" ")[1]) * 512 * x_scale_factor)
-                            y = int(float(labels[i].split(" ")[2]) * 512)
+                            y = int(float(labels[i].split(" ")[2]) * full_img.shape[0])
                             width = int(float(labels[i].split(" ")[3]) * 512 * x_scale_factor)
-                            height = int(float(labels[i].split(" ")[4]) * 512)
+                            height = int(float(labels[i].split(" ")[4]) * full_img.shape[0])
 
                             for m in range(int(y - int(height / 2)), int(y + int(height / 2))):
                                 obj_lines.append(m)
 
-                            for n in range(512):
+                            for n in range(full_img.shape[0]):
                                 if n not in obj_lines:
                                     if save_amp:
-                                        if len(amp_data[m]) > patch_length:
-                                            amp_patch = amp_data[m][:patch_length]
+                                        if len(amp_data[n]) > patch_length:
+                                            amp_patch = amp_data[n][:patch_length]
                                             if not os.listdir(os.path.join(res_folder, "patches", "amp")):
                                                 if len(os.listdir(target_folder)) < total_num:
                                                     amp_patch.tofile(os.path.join(res_folder, "patches", "amp", "0.bin"))
@@ -298,15 +299,21 @@ def background_data_sampler(data_folder,
                                                 new_name = str(new_name) + '.bin'
                                                 if len(os.listdir(target_folder)) < total_num:
                                                     amp_patch.tofile(os.path.join(res_folder, "patches", "amp", new_name))
+                                                    print(os.path.join(res_folder, "patches", "amp", new_name))
+                                                    print(len(os.listdir(target_folder)))
+                                                else:
+                                                    break
 
                                     if save_complex:
-                                        if len(im_data[m]) > patch_length:
-                                            re_patch = re_data[m][:patch_length]
-                                            im_patch = im_data[m][:patch_length]
+                                        if len(im_data[n]) > patch_length:
+                                            re_patch = re_data[n][:patch_length]
+                                            im_patch = im_data[n][:patch_length]
                                             if not os.listdir(os.path.join(res_folder, "patches", "im")):
                                                 if len(os.listdir(target_folder)) < total_num:
                                                     re_patch.tofile(os.path.join(res_folder, "patches", "re", "0.bin"))
                                                     im_patch.tofile(os.path.join(res_folder, "patches", "im", "0.bin"))
+                                                else:
+                                                    break
                                             else:
                                                 names = os.listdir(os.path.join(res_folder, "patches", "im"))
 
@@ -320,6 +327,8 @@ def background_data_sampler(data_folder,
                                                 if len(os.listdir(target_folder)) < total_num:
                                                     re_patch.tofile(os.path.join(res_folder, "patches", "re", new_name))
                                                     im_patch.tofile(os.path.join(res_folder, "patches", "im", new_name))
+                                                else:
+                                                    break
                 else:
                     full_img = cv2.imread(big_crop_folder + '/' + name.replace('txt', 'png'), cv2.IMREAD_GRAYSCALE)
                     x_scale_factor = full_img.shape[1] / 512
@@ -333,7 +342,7 @@ def background_data_sampler(data_folder,
                         re_data = np.reshape(re_data, full_img.shape)
                         im_data = np.reshape(im_data, full_img.shape)
 
-                    for m in range(512):
+                    for m in range(full_img.shape[0]):
                         if save_amp:
                             if len(amp_data[m]) > patch_length:
                                 amp_patch = amp_data[m][:patch_length]
@@ -352,6 +361,10 @@ def background_data_sampler(data_folder,
                                     new_name = str(new_name) + '.bin'
                                     if len(os.listdir(target_folder)) < total_num:
                                         amp_patch.tofile(os.path.join(res_folder, "patches", "amp", new_name))
+                                        print(os.path.join(res_folder, "patches", "amp", new_name))
+                                        print(len(os.listdir(target_folder)))
+                                    else:
+                                        break
 
                             if save_complex:
                                 if len(im_data[m]) > patch_length:
@@ -374,8 +387,14 @@ def background_data_sampler(data_folder,
                                         if len(os.listdir(target_folder)) < total_num:
                                             re_patch.tofile(os.path.join(res_folder, "patches", "re", new_name))
                                             im_patch.tofile(os.path.join(res_folder, "patches", "im", new_name))
+                                        else:
+                                            break
+        else:
+            break
+    print("patches done!")
 
     if save_amp and not save_complex:
+        print("amp data filtration started!")
         obj_filenames = os.listdir(os.path.join(res_folder, "patches", "amp"))
         test_names = random.sample(obj_filenames, test_num)
         for name in test_names:
@@ -596,37 +615,35 @@ def folder_creator(object_folder,
     shutil.rmtree(background_folder, ignore_errors=True)
 
 
-object_data_sampler(data_folder='../../signal_labels_new/obj_train_data',
-                    big_crop_folder='../../signal_labels_new/big_crop',
-                    amp_folder='../../signal_labels_new/amp_crop_norm',
-                    im_folder='../../signal_labels_new/im_crop',
-                    re_folder='../../signal_labels_new/re_crop',
-                    res_folder='../../signal_labels_new/patches_5000_grand',
-                    save_amp=True,
-                    save_complex=False,
-                    patch_length=5000,
-                    obj_size=0.8,
-                    test_num=100,
-                    validation_part=0.2,
-                    classes=[0, 2])
+# object_data_sampler(data_folder='/media/koltokng/Новый том/hyscan/big_size_dataset/sonar_dataset/obj_train_data',
+#                     big_crop_folder='/media/koltokng/Новый том/hyscan/big_size_dataset/norm_full',
+#                     amp_folder='/media/koltokng/Новый том/hyscan/big_size_dataset/norm_amp',
+#                     im_folder='../../signal_labels_new/im_crop',
+#                     re_folder='../../signal_labels_new/re_crop',
+#                     res_folder='/media/koltokng/Новый том/hyscan/big_size_dataset/sonar_dataset/dataset_obj',
+#                     save_amp=True,
+#                     save_complex=False,
+#                     patch_length=5000,
+#                     obj_size=0.8,
+#                     test_num=100,
+#                     validation_part=0.2,
+#                     classes=[0, 1, 2])
 
-background_data_sampler(data_folder='../../signal_labels_new/obj_train_data',
-                        big_crop_folder='../../signal_labels_new/big_crop',
-                        amp_folder='../../signal_labels_new/amp_crop_norm',
-                        im_folder='../../signal_labels_new/im_crop',
-                        re_folder='../../signal_labels_new/re_crop',
-                        res_folder='../../signal_labels_new/back_patches_5000_grand',
-                        save_amp=True,
-                        save_complex=False,
-                        total_num=6000,
-                        patch_length=5000,
-                        test_num=100,
-                        validation_part=0.2,
-                        classes=[0, 1, 2])
-
-folder_creator(object_folder='../../signal_labels_new/patches_5000_grand',
-               background_folder='../../signal_labels_new/back_patches_5000_grand',
+# background_data_sampler(data_folder='/media/koltokng/Новый том/hyscan/big_size_dataset/sonar_dataset/obj_train_data',
+#                         big_crop_folder='/media/koltokng/Новый том/hyscan/big_size_dataset/norm_full',
+#                         amp_folder='/media/koltokng/Новый том/hyscan/big_size_dataset/norm_amp',
+#                         im_folder='../../signal_labels_new/im_crop',
+#                         re_folder='../../signal_labels_new/re_crop',
+#                         res_folder='/media/koltokng/Новый том/hyscan/big_size_dataset/sonar_dataset/dataset_back',
+#                         save_amp=True,
+#                         save_complex=False,
+#                         total_num=15000,
+#                         patch_length=5000,
+#                         test_num=100,
+#                         validation_part=0.2,
+#                         classes=[0, 1, 2])
+#
+folder_creator(object_folder='/media/koltokng/Новый том/hyscan/big_size_dataset/sonar_dataset/dataset_obj',
+               background_folder='/media/koltokng/Новый том/hyscan/big_size_dataset/sonar_dataset/dataset_back',
                concat_amp=True,
                concat_complex=False)
-
-
